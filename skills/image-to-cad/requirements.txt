@@ -1,0 +1,8 @@
+# Direct runtime dependencies, verified on Python 3.11 / macOS arm64.
+numpy==2.4.6
+opencv-python-headless==4.14.0.94
+shapely==2.2.0
+ezdxf==1.4.5
+Pillow==12.3.0
+pypdfium2==5.14.0
+pymupdf==1.28.2
