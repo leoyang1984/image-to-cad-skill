@@ -1,9 +1,13 @@
 ---
 name: image-to-cad
-description: 将建筑平面、景观平面或建筑透视图片转成分层 DXF。用于从图纸重绘可编辑布局，或把确认过的钢笔透视线稿转成保留笔触的矢量表现图。
+description: 将建筑平面、景观平面或建筑透视线稿转成分层 DXF。 Convert architectural plans, landscape plans, and approved perspective pen drawings into layered DXF.
 ---
 
-# 图片转 CAD
+# 图片转 CAD · Image to CAD
+
+[中文](#中文) · [English](#english)
+
+## 中文
 
 以视觉相似、图面清晰和方便复用为目标。先读原图，识别主要对象、连接和遮挡，按用途选择路线。无尺寸依据时使用未校准像素单位。只有影响复用的疑问才集中向用户确认。
 
@@ -20,3 +24,21 @@ description: 将建筑平面、景观平面或建筑透视图片转成分层 DXF
 执行前读 [运行方式和布局格式](references/runtime.md)。命令入口为 [scripts/convert.py](scripts/convert.py)。读图、范围选择、布局整理和用户确认由助手在对话中完成，编译脚本从结构化布局或已确认的钢笔稿开始。
 
 回读实际落盘的 DXF，检查主要几何、开口或留白，交付 DXF 和导出 PNG。平面同时交付可切换底图和构件层的单画布页面。透视交付从 DXF 回读得到的 SVG，放大时查看矢量几何。用户在对话中给修改意见。
+
+## English
+
+Aim for a visually similar, clean drawing that is easy to reuse. Read the source image first to identify the main objects, connections, and occlusions. Choose the route that matches the intended use. Use uncalibrated pixel units when there is no reliable scale. Ask about ambiguities that affect reuse.
+
+| Input | Workflow |
+| --- | --- |
+| Architectural plan | Interpret the source and record wall axes, wall thicknesses, and openings with their host walls. Compile the walls, cut the openings, and draw standard door and window blocks. |
+| Landscape plan | Recommend what to retain and explain what can be identified reliably. After the user agrees on scope, record the main outlines, path edges, site zones, and defining forms. Redraw them by layer. |
+| Perspective line art or rendering | Prepare a clean pen drawing with a lightly hand-drawn character. Convert the approved strokes to layered solid DXF HATCH entities with cutouts to preserve their weight and tone. |
+
+Architectural and landscape plans can be interpreted directly from the source. Use the built-in ImageGen tool when dense textures obscure the layout. If the user has already explicitly approved a clean perspective pen drawing, use that drawing.
+
+**Approval before DXF export.** Compare a generated simplification against the original, checking the main structures, openings, occlusions, and outlines. Deliver the simplification on its own and stop for approval. If the user requests changes, show the revised version and ask again. Run the DXF command with `--approved` only after the user explicitly approves that exact version. Use the original image as the reference for plan geometry.
+
+Read the [runtime guide and layout schemas](references/runtime.en.md) before running [scripts/convert.py](scripts/convert.py). The agent interprets images, agrees on scope, prepares layouts, and obtains approval in conversation. The scripts take a structured layout or an approved pen drawing as input.
+
+Read back the saved DXF and check the main geometry, openings, or cutouts. Deliver the DXF and its PNG export. For plans, also deliver a single-canvas review page with source and layer toggles. For perspectives, deliver the SVG generated from the saved DXF so users can zoom into the vectors. Collect revision requests in conversation.

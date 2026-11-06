@@ -1,5 +1,7 @@
 # 运行方式与布局格式
 
+[English runtime guide](runtime.en.md)
+
 ## 安装与检查
 
 将 `skills/image-to-cad/` 整个目录交给 Agent。转换脚本和运行依赖清单都在其中。以下命令以本仓库根目录为起点。
