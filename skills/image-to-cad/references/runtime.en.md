@@ -11,7 +11,10 @@ python3.11 -m venv .venv
 .venv/bin/python -m pip install -r skills/image-to-cad/requirements.txt
 .venv/bin/python -m pip check
 .venv/bin/python skills/image-to-cad/scripts/convert.py --help
+.venv/bin/python examples/smoke.py
 ```
+
+`examples/smoke.py` checks all three exporters with synthetic drawings.
 
 The verified environment is macOS arm64 with Python 3.11. On Windows, the interpreter path is `.venv\Scripts\python.exe`. Verify dependencies and conversion on the target machine. The command help lists `prepare`, `building`, `landscape`, and `pen`.
 
@@ -49,7 +52,7 @@ Use the pixel centers of the normalized source or PDF page. X increases to the r
 
 Set `crop_xyxy: [0, 0, width, height]` for the whole frame. Each wall has an `id`, two endpoints in `axis: [[x1, y1], [x2, y2]]`, and a pixel `width`. Each opening has an `id`, a host wall ID in `wall`, its distance from the start of the wall axis in `offset`, a `length`, a `kind`, and a `certainty` value. Opening kinds are `door`, `window`, `garage`, `passage`, and `unresolved`. A confirmed swing door also needs `hinge: start|end` and `side: -1|1`. If the swing is unclear, use `unresolved` and set `certainty` to `needs_confirmation`. Record regularization and omissions in the top-level arrays `regularization` and `omitted`.
 
-Check openings and circulation against the source. Preserve editable boundaries for unidentified objects. The [synthetic smoke example](../../../examples/smoke.py) shows a minimal layout.
+Check openings and circulation against the source. Preserve editable boundaries for unidentified objects. The full example is [examples/apartment.json](../../../examples/apartment.json); [examples/smoke.py](../../../examples/smoke.py) is a minimal synthetic layout.
 
 ```bash
 .venv/bin/python skills/image-to-cad/scripts/convert.py building --source reference.png --layout layout.json --output building-v1
@@ -59,7 +62,7 @@ Check openings and circulation against the source. Preserve editable boundaries 
 
 Recommend a scope and explain which objects can be represented reliably. The user can add specific objects or areas. Interpret the paths against the source, keeping the site outline, both sides of paths, entrance gaps, and the main forms within structures. Record areas of uncertain use by their visible boundaries. Keep outlines open where the image crops them, and follow the agreed scope for paving marks, dots, and textures.
 
-The layout has `frame: [0, 0, width, height]` and a `paths` array. Each path has a unique `id`, a `layer`, and a `d` string. Separate commands and coordinates with spaces. Use absolute `M x y`, `L x y`, `C x1 y1 x2 y2 x y`, and a final `Z` to close a path. Supported layers are `L-SITE-EDGE`, `L-WALK`, `L-ZONE`, `L-PAVILION`, `L-FORM`, `L-AUX`, and `L-STAIR`. The [synthetic smoke example](../../../examples/smoke.py) includes a minimal path.
+The layout has `frame: [0, 0, width, height]` and a `paths` array. Each path has a unique `id`, a `layer`, and a `d` string. Separate commands and coordinates with spaces. Use absolute `M x y`, `L x y`, `C x1 y1 x2 y2 x y`, and a final `Z` to close a path. Supported layers are `L-SITE-EDGE`, `L-WALK`, `L-ZONE`, `L-PAVILION`, `L-FORM`, `L-AUX`, and `L-STAIR`. The full example is [examples/garden.json](../../../examples/garden.json); [examples/smoke.py](../../../examples/smoke.py) includes a minimal path.
 
 ```bash
 .venv/bin/python skills/image-to-cad/scripts/convert.py landscape --source reference.png --layout layout.json --output landscape-v1

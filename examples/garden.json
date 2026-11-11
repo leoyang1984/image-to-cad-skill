@@ -1,0 +1,52 @@
+{
+  "status": "synthetic demo layout; every outline was authored for this repository",
+  "coordinate_system": "source image pixels; x right, y down",
+  "frame": [
+    0,
+    0,
+    960,
+    640
+  ],
+  "paths": [
+    {
+      "id": "site-edge",
+      "layer": "L-SITE-EDGE",
+      "d": "M 60 60 L 900 60 L 900 580 L 60 580 Z"
+    },
+    {
+      "id": "main-walk",
+      "layer": "L-WALK",
+      "d": "M 100 540 C 180 480 240 500 320 430 C 400 360 470 380 560 320 C 640 270 720 250 860 230"
+    },
+    {
+      "id": "upper-walk",
+      "layer": "L-WALK",
+      "d": "M 320 430 C 300 360 320 300 380 250"
+    },
+    {
+      "id": "lawn",
+      "layer": "L-ZONE",
+      "d": "M 120 130 C 220 100 340 110 400 160 C 440 210 400 270 320 285 C 240 300 160 260 130 200 Z"
+    },
+    {
+      "id": "pond",
+      "layer": "L-FORM",
+      "d": "M 560 430 C 620 380 760 390 800 450 C 840 510 760 560 660 545 C 580 533 520 480 560 430 Z"
+    },
+    {
+      "id": "pavilion",
+      "layer": "L-PAVILION",
+      "d": "M 385 470 C 385 440 410 415 440 415 C 470 415 495 440 495 470 C 495 500 470 525 440 525 C 410 525 385 500 385 470 Z"
+    },
+    {
+      "id": "service-box",
+      "layer": "L-AUX",
+      "d": "M 760 120 L 860 120 L 860 180 L 760 180 Z"
+    },
+    {
+      "id": "greenhouse",
+      "layer": "L-AUX",
+      "d": "M 700 330 C 740 300 800 300 840 330 L 840 380 L 700 380 Z"
+    }
+  ]
+}

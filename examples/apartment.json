@@ -1,0 +1,264 @@
+{
+  "status": "synthetic demo layout; every wall and opening was authored for this repository",
+  "coordinate_system": "source image pixels; x right, y down",
+  "crop_xyxy": [
+    0,
+    0,
+    960,
+    640
+  ],
+  "walls": [
+    {
+      "id": "north",
+      "axis": [
+        [
+          32,
+          40
+        ],
+        [
+          928,
+          40
+        ]
+      ],
+      "width": 16
+    },
+    {
+      "id": "south",
+      "axis": [
+        [
+          32,
+          600
+        ],
+        [
+          928,
+          600
+        ]
+      ],
+      "width": 16
+    },
+    {
+      "id": "west",
+      "axis": [
+        [
+          40,
+          32
+        ],
+        [
+          40,
+          608
+        ]
+      ],
+      "width": 16
+    },
+    {
+      "id": "east",
+      "axis": [
+        [
+          920,
+          32
+        ],
+        [
+          920,
+          608
+        ]
+      ],
+      "width": 16
+    },
+    {
+      "id": "spine",
+      "axis": [
+        [
+          380,
+          40
+        ],
+        [
+          380,
+          600
+        ]
+      ],
+      "width": 12
+    },
+    {
+      "id": "east-wing",
+      "axis": [
+        [
+          380,
+          300
+        ],
+        [
+          920,
+          300
+        ]
+      ],
+      "width": 12
+    },
+    {
+      "id": "east-split",
+      "axis": [
+        [
+          660,
+          300
+        ],
+        [
+          660,
+          600
+        ]
+      ],
+      "width": 12
+    },
+    {
+      "id": "west-split",
+      "axis": [
+        [
+          40,
+          420
+        ],
+        [
+          380,
+          420
+        ]
+      ],
+      "width": 12
+    }
+  ],
+  "openings": [
+    {
+      "id": "front-door",
+      "wall": "south",
+      "offset": 248,
+      "length": 46,
+      "kind": "door",
+      "hinge": "start",
+      "side": -1,
+      "certainty": "clear"
+    },
+    {
+      "id": "north-window-1",
+      "wall": "north",
+      "offset": 88,
+      "length": 90,
+      "kind": "window",
+      "certainty": "clear"
+    },
+    {
+      "id": "north-window-2",
+      "wall": "north",
+      "offset": 428,
+      "length": 90,
+      "kind": "window",
+      "certainty": "clear"
+    },
+    {
+      "id": "north-window-3",
+      "wall": "north",
+      "offset": 648,
+      "length": 90,
+      "kind": "window",
+      "certainty": "clear"
+    },
+    {
+      "id": "west-window-1",
+      "wall": "west",
+      "offset": 108,
+      "length": 90,
+      "kind": "window",
+      "certainty": "clear"
+    },
+    {
+      "id": "west-window-2",
+      "wall": "west",
+      "offset": 448,
+      "length": 90,
+      "kind": "window",
+      "certainty": "clear"
+    },
+    {
+      "id": "east-window-1",
+      "wall": "east",
+      "offset": 68,
+      "length": 90,
+      "kind": "window",
+      "certainty": "clear"
+    },
+    {
+      "id": "east-window-2",
+      "wall": "east",
+      "offset": 388,
+      "length": 90,
+      "kind": "window",
+      "certainty": "clear"
+    },
+    {
+      "id": "spine-door",
+      "wall": "spine",
+      "offset": 90,
+      "length": 42,
+      "kind": "door",
+      "hinge": "start",
+      "side": 1,
+      "certainty": "clear"
+    },
+    {
+      "id": "east-wing-door",
+      "wall": "east-wing",
+      "offset": 60,
+      "length": 42,
+      "kind": "door",
+      "hinge": "end",
+      "side": -1,
+      "certainty": "clear"
+    },
+    {
+      "id": "east-split-door",
+      "wall": "east-split",
+      "offset": 180,
+      "length": 42,
+      "kind": "door",
+      "hinge": "start",
+      "side": 1,
+      "certainty": "clear"
+    },
+    {
+      "id": "west-passage",
+      "wall": "west-split",
+      "offset": 60,
+      "length": 60,
+      "kind": "passage",
+      "certainty": "clear"
+    },
+    {
+      "id": "garage",
+      "wall": "south",
+      "offset": 428,
+      "length": 120,
+      "kind": "garage",
+      "certainty": "clear"
+    },
+    {
+      "id": "unclear-panel",
+      "wall": "east-split",
+      "offset": 60,
+      "length": 40,
+      "kind": "unresolved",
+      "certainty": "needs_confirmation",
+      "panel": [
+        [
+          660,
+          360
+        ],
+        [
+          660,
+          400
+        ]
+      ]
+    }
+  ],
+  "regularization": [
+    "All walls are drawn as straight axes with a uniform pixel thickness",
+    "Doors open a full 90 degrees and use one hinge side",
+    "Repeated windows share the same three-line symbol"
+  ],
+  "omitted": [
+    "Furniture, fixtures, text, dimensions and hatching are outside this demo"
+  ]
+}

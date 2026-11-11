@@ -6,14 +6,17 @@
 
 将 `skills/image-to-cad/` 整个目录交给 Agent。转换脚本和运行依赖清单都在其中。以下命令以本仓库根目录为起点。
 
-在目标机器上准备 Python 3.11。从 CAD 项目根目录执行以下命令。已有兼容的虚拟环境时，可以使用它的 Python。
+在目标机器上准备 Python 3.11。从仓库根目录执行以下命令。已有兼容的虚拟环境时，可以使用它的 Python。
 
 ```bash
 python3.11 -m venv .venv
 .venv/bin/python -m pip install -r skills/image-to-cad/requirements.txt
 .venv/bin/python -m pip check
 .venv/bin/python skills/image-to-cad/scripts/convert.py --help
+.venv/bin/python examples/smoke.py
 ```
+
+`examples/smoke.py` 用合成图验证三条导出路线。
 
 已验证环境为 macOS arm64 和 Python 3.11。Windows 上虚拟环境的解释器路径为 `.venv\Scripts\python.exe`，依赖和转换的实际运行仍需在目标环境验证。入口帮助应列出 `prepare`、`building`、`landscape`、`pen`。
 
@@ -51,7 +54,7 @@ ln -s ../../skills/image-to-cad .agents/skills/image-to-cad
 
 全图使用 `crop_xyxy: [0, 0, width, height]`。墙体条目含 `id`、两个端点 `axis: [[x1, y1], [x2, y2]]` 和像素宽度 `width`。开口条目含 `id`、宿主墙 ID `wall`、沿轴起点量起的 `offset`、`length`、`kind` 和 `certainty`。开口类型为 `door`、`window`、`garage`、`passage` 或 `unresolved`。明确的平开门还需 `hinge: start|end` 和 `side: -1|1`。开向难辨时用 `unresolved`，并把 `certainty` 设为 `needs_confirmation`。顶层提供 `regularization` 和 `omitted` 数组记录规整与省略。
 
-仓库内的 [合成样例](../../../examples/smoke.py) 演示了最小布局。核查原图中的开口和通行关系，保持未识别对象的可编辑边界。
+完整示例见 [examples/apartment.json](../../../examples/apartment.json)，最小合成样例见 [examples/smoke.py](../../../examples/smoke.py)。核查原图中的开口和通行关系，保持未识别对象的可编辑边界。
 
 ```bash
 .venv/bin/python skills/image-to-cad/scripts/convert.py building --source reference.png --layout layout.json --output building-v1
@@ -61,7 +64,7 @@ ln -s ../../skills/image-to-cad .agents/skills/image-to-cad
 
 先给出一套默认保留范围，指出辨认困难的对象和可达到的表达程度。用户可以增加指定构件或局部，再按原图整理路径。保留场地、步道两侧、入口缺口及主体内部主导形态。用途不明的色块按可见边界记录。裁切处保持断开，铺装、散点和纹理按确认范围取舍。
 
-布局含 `frame: [0, 0, width, height]` 和 `paths` 数组。路径含唯一 `id`、`layer`、`d`。路径命令以空格分隔，支持绝对坐标 `M x y`、`L x y`、`C x1 y1 x2 y2 x y` 和末尾的 `Z`。可用图层为 `L-SITE-EDGE`、`L-WALK`、`L-ZONE`、`L-PAVILION`、`L-FORM`、`L-AUX`、`L-STAIR`。最小路径示例见 [合成样例](../../../examples/smoke.py)。
+布局含 `frame: [0, 0, width, height]` 和 `paths` 数组。路径含唯一 `id`、`layer`、`d`。路径命令以空格分隔，支持绝对坐标 `M x y`、`L x y`、`C x1 y1 x2 y2 x y` 和末尾的 `Z`。可用图层为 `L-SITE-EDGE`、`L-WALK`、`L-ZONE`、`L-PAVILION`、`L-FORM`、`L-AUX`、`L-STAIR`。完整示例见 [examples/garden.json](../../../examples/garden.json)，最小路径见 [examples/smoke.py](../../../examples/smoke.py)。
 
 ```bash
 .venv/bin/python skills/image-to-cad/scripts/convert.py landscape --source reference.png --layout layout.json --output landscape-v1

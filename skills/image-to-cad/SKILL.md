@@ -19,6 +19,8 @@ description: 将建筑平面、景观平面或建筑透视线稿转成分层 DXF
 
 建筑和景观平面可以直接读原图。纹理密集时，可用内置 ImageGen 辅助简化。透视输入已有用户明确认可的干净钢笔稿时，直接用该稿。
 
+脚本只做确定性绘制：读图、判断构件和整理布局由助手完成。不提供自动识别，不做文字与尺寸，平面路线不输出填充。
+
 **生成式简化稿的确认关口。** 先与原图逐区对照，检查关键构筑物、开口、遮挡和轮廓。单独发简化稿给用户确认，本轮停在预览。用户要求修改时，发新稿再确认。得到对该版本的明确确认后，才执行带 `--approved` 的 DXF 命令。用户明确确认了同一版本时可继续执行。平面重绘仍以原图为依据。
 
 执行前读 [运行方式和布局格式](references/runtime.md)。命令入口为 [scripts/convert.py](scripts/convert.py)。读图、范围选择、布局整理和用户确认由助手在对话中完成，编译脚本从结构化布局或已确认的钢笔稿开始。
@@ -36,6 +38,8 @@ Aim for a visually similar, clean drawing that is easy to reuse. Read the source
 | Perspective line art or rendering | Prepare a clean pen drawing with a lightly hand-drawn character. Convert the approved strokes to layered solid DXF HATCH entities with cutouts to preserve their weight and tone. |
 
 Architectural and landscape plans can be interpreted directly from the source. Use the built-in ImageGen tool when dense textures obscure the layout. If the user has already explicitly approved a clean perspective pen drawing, use that drawing.
+
+The scripts only draw deterministically: the agent reads the image and prepares the layout. There is no automatic recognition, no text or dimension extraction, and plan routes emit no fills.
 
 **Approval before DXF export.** Compare a generated simplification against the original, checking the main structures, openings, occlusions, and outlines. Deliver the simplification on its own and stop for approval. If the user requests changes, show the revised version and ask again. Run the DXF command with `--approved` only after the user explicitly approves that exact version. Use the original image as the reference for plan geometry.
 

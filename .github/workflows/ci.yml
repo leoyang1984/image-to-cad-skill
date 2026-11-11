@@ -1,0 +1,61 @@
+name: smoke
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exporters:
+    name: exporters (python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install pinned dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r skills/image-to-cad/requirements.txt
+          python -m pip check
+
+      - name: CLI help
+        run: python skills/image-to-cad/scripts/convert.py --help
+
+      - name: All three exporters
+        run: python examples/smoke.py
+
+      - name: Regenerate the README gallery
+        run: |
+          python examples/demo.py
+          test -f docs/cases/demo-building.png
+          test -f docs/cases/demo-landscape.png
+          test -f docs/cases/demo-pen.png
+
+      - name: Check repository links
+        run: |
+          python - <<'PY'
+          import re, pathlib, sys
+          root = pathlib.Path('.')
+          bad = []
+          for md in root.rglob('*.md'):
+              for target in re.findall(r'\]\(([^)#]+)\)', md.read_text(encoding='utf-8')):
+                  if target.startswith(('http://', 'https://', 'mailto:')):
+                      continue
+                  if not (md.parent / target).exists():
+                      bad.append(f'{md}: {target}')
+          print('\n'.join(bad) or 'all relative links resolve')
+          sys.exit(1 if bad else 0)
+          PY
