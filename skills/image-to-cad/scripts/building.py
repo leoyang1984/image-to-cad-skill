@@ -83,6 +83,9 @@ def compile_layout(model,out):
         layer_record = doc.layers.new(layer, dxfattribs={'color': aci, 'lineweight': 0})
         if rgb is not None:
             layer_record.rgb = rgb
+    if model.get('stairs'):
+        stair_layer = doc.layers.new('A-STAIR', dxfattribs={'color': 8})
+        stair_layer.rgb = (110, 110, 110)
     def xy(p):return (float(p[0]+left),float(fh-1-p[1]-top))
     def tag(ent,oid):ent.set_xdata('REDRAW_PILOT',[(1000,oid)]);return ent
     for i,geom in enumerate(linework):
@@ -90,6 +93,36 @@ def compile_layout(model,out):
         coords=list(geom.coords);closed=coords[0]==coords[-1]
         if closed:coords=coords[:-1]
         tag(doc.modelspace().add_lwpolyline([xy(p) for p in coords],close=closed,dxfattribs={'layer':'A-WALL'}),f'wall-boundary-{i}')
+    for stair in model.get('stairs', []):
+        x1,y1,x2,y2 = stair['rect']; direction = stair['direction']; count = int(stair['treads'])
+        sid = stair['id']
+        if direction not in ('north','south','east','west'):
+            raise ValueError(f"Unsupported stair direction {direction}")
+        if count < 2 or x2 <= x1 or y2 <= y1:
+            raise ValueError(f"Invalid stair {sid}")
+        space = doc.modelspace()
+        if direction in ('north','south'):
+            start,end = (y2,y1) if direction=='north' else (y1,y2)
+            for i in range(1,count):
+                y = start + (end-start)*i/count
+                tag(space.add_line(xy((x1,y)), xy((x2,y)), dxfattribs={'layer':'A-STAIR'}), sid)
+            cx = (x1+x2)/2
+            tail = (cx, y2 if direction=='north' else y1)
+            tip = (cx, y1 if direction=='north' else y2)
+        else:
+            start,end = (x2,x1) if direction=='west' else (x1,x2)
+            for i in range(1,count):
+                x = start + (end-start)*i/count
+                tag(space.add_line(xy((x,y1)), xy((x,y2)), dxfattribs={'layer':'A-STAIR'}), sid)
+            cy = (y1+y2)/2
+            tail = (x2 if direction=='west' else x1, cy)
+            tip = (x1 if direction=='west' else x2, cy)
+        tag(space.add_line(xy(tail), xy(tip), dxfattribs={'layer':'A-STAIR'}), sid)
+        ux,uy = tip[0]-tail[0], tip[1]-tail[1]; length=(ux*ux+uy*uy)**.5
+        ux,uy = ux/length, uy/length; head=9
+        for sign in (1,-1):
+            barb = (tip[0]-ux*head - sign*uy*head*.45, tip[1]-uy*head + sign*ux*head*.45)
+            tag(space.add_line(xy(tip), xy(barb), dxfattribs={'layer':'A-STAIR'}), sid)
     opening_checks=[]
     for opening in model['openings']:
         oid=opening['id'];p,q,u,n,thickness,cut=frames[oid]
@@ -169,7 +202,7 @@ def compile_layout(model,out):
     summary={'scope':'one visually interpreted local layout; not an automatic image-to-CAD recognizer',
         'source_sha256':hashlib.sha256(source.read_bytes()).hexdigest(),'crop_xyxy':model['crop_xyxy'],
         'units':'uncalibrated original-image pixels; x right, CAD y up',
-        'wall_objects':len(walls),'clear_swing_doors':sum(o['kind']=='door' for o in model['openings']),
+        'wall_objects':len(walls),'stairs':len(model.get('stairs',[])),'clear_swing_doors':sum(o['kind']=='door' for o in model['openings']),
         'clear_windows':sum(o['kind']=='window' for o in model['openings']),
         'unresolved_door_panels':sum(o['kind']=='unresolved' for o in model['openings']),
         'entity_types':dict(Counter(e.dxftype() for e in saved.modelspace())),

@@ -13,7 +13,7 @@ description: 将建筑平面、景观平面或建筑透视线稿转成分层 DXF
 
 | 输入 | 处理方式 |
 | --- | --- |
-| 建筑平面 | 读原图，记录墙轴、墙厚、所属墙及开口位置。用程序合并墙体、切开洞口、绘制标准门窗图块。 |
+| 建筑平面 | 读原图，记录墙轴、墙厚、所属墙及开口位置，需要时另记楼梯。用程序合并墙体、切开洞口、绘制标准门窗图块与踏步。 |
 | 景观平面 | 先建议保留范围和可辨认程度。按确认范围记录主体轮廓、通行边线、场地分区和主要造型，再分层重绘。 |
 | 透视线稿或效果图 | 整理成清晰、略带手绘感的钢笔稿。将确认后的笔画转成带孔洞的分层实心 HATCH，保留粗细与深浅。 |
 
@@ -42,7 +42,7 @@ Aim for a visually similar, clean drawing that is easy to reuse. Read the source
 
 | Input | Workflow |
 | --- | --- |
-| Architectural plan | Interpret the source and record wall axes, wall thicknesses, and openings with their host walls. Compile the walls, cut the openings, and draw standard door and window blocks. |
+| Architectural plan | Interpret the source and record wall axes, wall thicknesses, openings with their host walls, and any stairs. Compile the walls, cut the openings, and draw standard blocks and stair treads. |
 | Landscape plan | Recommend what to retain and explain what can be identified reliably. After the user agrees on scope, record the main outlines, path edges, site zones, and defining forms. Redraw them by layer. |
 | Perspective line art or rendering | Prepare a clean pen drawing with a lightly hand-drawn character. Convert the approved strokes to layered solid DXF HATCH entities with cutouts to preserve their weight and tone. |
 

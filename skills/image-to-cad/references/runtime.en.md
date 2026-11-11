@@ -66,6 +66,11 @@ Set `crop_xyxy: [0, 0, width, height]` for the whole frame. Each wall has an `id
 
 Check openings and circulation against the source. Preserve editable boundaries for unidentified objects. The full example is [examples/apartment.json](../../../examples/apartment.json); [examples/smoke.py](../../../examples/smoke.py) is a minimal synthetic layout.
 
+An optional `stairs` array draws stair runs: each entry has an `id`, a
+`rect: [x1, y1, x2, y2]`, a `treads` count and a `direction` (`north`, `south`, `east` or
+`west`, the direction of ascent). Treads and an ascent arrow are drawn on the A-STAIR layer,
+visible by default; walls and openings still come from `walls` and `openings`.
+
 ```bash
 .venv/bin/python skills/image-to-cad/scripts/convert.py building --source reference.png --layout layout.json --output building-v1
 ```

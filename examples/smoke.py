@@ -38,6 +38,8 @@ def main():
             'walls': [{'id': 'wall', 'axis': [[20, 20], [180, 20]], 'width': 8}],
             'openings': [{'id': 'window', 'wall': 'wall', 'offset': 70,
                           'length': 20, 'kind': 'window', 'certainty': 'clear'}],
+            'stairs': [{'id': 'stair', 'rect': [40, 60, 90, 110], 'treads': 6,
+                        'direction': 'north'}],
             'regularization': [], 'omitted': [],
         }))
         landscape = work / 'landscape.json'
@@ -47,6 +49,9 @@ def main():
                        'd': 'M 20 20 L 180 20 C 170 100 30 100 20 20 Z'}],
         }))
         check('building', ['--source', str(source), '--layout', str(building)], work, {'INSERT'})
+        building_dxf = ezdxf.readfile(work / 'building' / 'redrawn.dxf')
+        if 'A-STAIR' not in {entity.dxf.layer for entity in building_dxf.modelspace()}:
+            raise RuntimeError('building DXF is missing the stair layer')
         check('landscape', ['--source', str(source), '--layout', str(landscape)], work, {'SPLINE'})
         check('pen', ['--simplified', str(source), '--approved'], work, {'HATCH'})
 

@@ -40,7 +40,7 @@ def export_plan(args, out):
             compile_layout(model, out)
             labels = {
                 'A-WALL': '墙体', 'A-DOOR': '平开门', 'A-WINDOW': '窗',
-                'A-GARAGE-DOOR': '车库门', 'A-OPENING-REVIEW': '待确认开口',
+                'A-GARAGE-DOOR': '车库门', 'A-OPENING-REVIEW': '待确认开口', 'A-STAIR': '楼梯',
             }
             title = '建筑平面图叠合查看'
         else:

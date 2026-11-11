@@ -62,6 +62,8 @@ ln -s ../../skills/image-to-cad .agents/skills/image-to-cad
 
 完整示例见 [examples/apartment.json](../../../examples/apartment.json)，最小合成样例见 [examples/smoke.py](../../../examples/smoke.py)。核查原图中的开口和通行关系，保持未识别对象的可编辑边界。
 
+可选的 `stairs` 数组绘制楼梯：每条含 `id`、`rect: [x1, y1, x2, y2]`、`treads`（踏步数）和 `direction`（`north`、`south`、`east`、`west`，指上行方向）。踏步线和带箭头的上行线画在 A-STAIR 图层，默认可见；墙体与洞口仍由 `walls`、`openings` 定义。
+
 ```bash
 .venv/bin/python skills/image-to-cad/scripts/convert.py building --source reference.png --layout layout.json --output building-v1
 ```
