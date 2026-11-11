@@ -33,10 +33,10 @@ this repository. They exercise the export pipeline; they are not real project dr
 
 ## 安装 / Installation
 
-使用 Python 3.11，在仓库根目录执行。最后一条命令用合成图验证三条导出路线，第二条命令重新生成上面的示例图。
+使用 Python 3.11，在仓库根目录执行。倒数第二条命令用合成图验证三条导出路线，最后一条命令重新生成上面的示例图。
 
-Run these from the repository root with Python 3.11. The last command checks all three
-exporters; the second one regenerates the example images above.
+Run these from the repository root with Python 3.11. The second-to-last command checks all
+three exporters; the last one regenerates the example images above.
 
 ```bash
 python3.11 -m venv .venv
