@@ -37,7 +37,7 @@ jobs:
       - name: All three exporters
         run: python examples/smoke.py
 
-      - name: Regenerate the README gallery
+      - name: Regenerate the synthetic demo outputs
         run: |
           python examples/demo.py
           test -f docs/cases/demo-building.png
