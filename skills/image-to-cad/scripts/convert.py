@@ -2,6 +2,7 @@
 """Generate audited CAD from a structured plan or an approved pen drawing."""
 import argparse
 import json
+import sys
 from hashlib import sha256
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -28,10 +29,10 @@ def export_plan(args, out):
         metadata = prepare_image(args.source, source)
         width, height = metadata['width'], metadata['height']
         frame = [0, 0, width, height]
-        simplified = None
+        simplified = simplified_meta = None
         if args.simplified:
             simplified = Path(scratch) / 'simplified.png'
-            prepare_image(args.simplified, simplified)
+            simplified_meta = prepare_image(args.simplified, simplified)
         if args.mode == 'building':
             if model['crop_xyxy'] != frame:
                 raise ValueError('The layout frame must match the source image')
@@ -65,6 +66,13 @@ def export_plan(args, out):
         report = json.loads(report_file.read_text()) if report_file.exists() else {}
         report.update(entities=len(saved.modelspace()), source_sha256=metadata['source_sha256'],
                       review_page=filename)
+        if simplified_meta:
+            size = [simplified_meta['width'], simplified_meta['height']]
+            report['simplified_size_px'] = size
+            report['simplified_frame_match'] = size == [width, height]
+            if not report['simplified_frame_match']:
+                print('warning: the simplified image differs in size from the source; '
+                      'the review page stretches it to the source frame', file=sys.stderr)
         model['source'] = args.source.name
         if args.simplified:
             model['simplified'] = args.simplified.name

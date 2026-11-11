@@ -48,6 +48,18 @@ Use the pixel centers of the normalized source or PDF page. X increases to the r
 .venv/bin/python skills/image-to-cad/scripts/convert.py prepare drawing.pdf --page 1 --dpi 200 --output reference.png
 ```
 
+## Without an image-generation tool
+
+Plans can be built from the source without a simplification. The perspective route needs an
+approved drawing: generate and compare it yourself when the environment can, or hand the source
+and a prompt to the user, who generates the image with any image tool and saves it as
+`simplified.png`. The handoff steps, prompt template and acceptance checklist are in
+[scope and handoff](scope.md).
+
+`--simplified` is re-encoded the same way `prepare` does it. When its size differs from the
+source, the review page stretches it to the source frame as a visual aid only, and the report
+sets `simplified_frame_match` to `false`.
+
 ## Architectural plan
 
 Set `crop_xyxy: [0, 0, width, height]` for the whole frame. Each wall has an `id`, two endpoints in `axis: [[x1, y1], [x2, y2]]`, and a pixel `width`. Each opening has an `id`, a host wall ID in `wall`, its distance from the start of the wall axis in `offset`, a `length`, a `kind`, and a `certainty` value. Opening kinds are `door`, `window`, `garage`, `passage`, and `unresolved`. A confirmed swing door also needs `hinge: start|end` and `side: -1|1`. If the swing is unclear, use `unresolved` and set `certainty` to `needs_confirmation`. Record regularization and omissions in the top-level arrays `regularization` and `omitted`.
@@ -82,4 +94,4 @@ The DXF uses four shades of solid HATCH to preserve the pen drawing's appearance
 
 ## Outputs
 
-Each workflow writes `redrawn.dxf`, `cad-preview.png`, and `report.json`. Plan workflows also write `layout.json` and a single-canvas HTML review page. The perspective workflow also writes `cad-vector.svg`. If an approved simplification was supplied, the report records its SHA-256 to identify the input version.
+Each workflow writes `redrawn.dxf`, `cad-preview.png`, and `report.json`. Plan workflows also write `layout.json` and a single-canvas HTML review page. The perspective workflow also writes `cad-vector.svg`. If an approved simplification was supplied, the report records its SHA-256, pixel size and `simplified_frame_match` to identify the input version.

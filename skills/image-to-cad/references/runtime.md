@@ -50,6 +50,12 @@ ln -s ../../skills/image-to-cad .agents/skills/image-to-cad
 .venv/bin/python skills/image-to-cad/scripts/convert.py prepare drawing.pdf --page 1 --dpi 200 --output reference.png
 ```
 
+## 没有生图工具时
+
+建筑与景观可以先不用简化稿，直接从原图整理布局。透视路线需要一张确认稿：当前环境能生成或编辑图片时，按下面的确认关口走；不能时，把源图与提示词交给用户，由用户用任意图像工具生成后存回 `simplified.png`。交接步骤、提示词模板与验收清单见 [范围确认与简化图交接](scope.md)。
+
+`--simplified` 的图片会先按 `prepare` 的方式重新编码。尺寸与源图不一致时，叠合页会把它拉伸到源图框，只作视觉参考；报告里的 `simplified_frame_match` 为 `false`。
+
 ## 建筑平面
 
 全图使用 `crop_xyxy: [0, 0, width, height]`。墙体条目含 `id`、两个端点 `axis: [[x1, y1], [x2, y2]]` 和像素宽度 `width`。开口条目含 `id`、宿主墙 ID `wall`、沿轴起点量起的 `offset`、`length`、`kind` 和 `certainty`。开口类型为 `door`、`window`、`garage`、`passage` 或 `unresolved`。明确的平开门还需 `hinge: start|end` 和 `side: -1|1`。开向难辨时用 `unresolved`，并把 `certainty` 设为 `needs_confirmation`。顶层提供 `regularization` 和 `omitted` 数组记录规整与省略。
@@ -84,4 +90,4 @@ DXF 使用四档灰度的 HATCH，适合保持钢笔画的外观。需要逐条�
 
 ## 输出
 
-各路线输出 `redrawn.dxf`、`cad-preview.png` 和 `report.json`。平面另外输出结构化 `layout.json` 和单画布 HTML。透视另外输出 `cad-vector.svg`。有确认稿时报告记录其 SHA-256，便于核对使用的版本。
+各路线输出 `redrawn.dxf`、`cad-preview.png` 和 `report.json`。平面另外输出结构化 `layout.json` 和单画布 HTML。透视另外输出 `cad-vector.svg`。有确认稿时报告记录其 SHA-256、像素尺寸与 `simplified_frame_match`，便于核对使用的版本。

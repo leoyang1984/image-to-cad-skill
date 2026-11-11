@@ -71,14 +71,18 @@ ln -s ../../skills/image-to-cad .agents/skills/image-to-cad
 
 ## 使用约定 / Workflow notes
 
-助手负责读图、确定保留范围和整理布局。采用生成式简化稿时，先让用户确认具体版本，再导出 DXF；
-脚本用 `--approved` 拦下未经确认的简化稿。生成简化稿需要 Agent 环境提供图像生成工具，
-Python 依赖只负责编译、导出和回读。
+助手先与用户确认这次要表达的范围（墙体与门窗、场地外缘与步道、保留哪些构件），再按当前环境
+的能力选做法：能生图就直接生成简化稿并请用户确认；不能生图就把提示词和源图交给用户，用任意
+图像工具生成后拿回来验收；两者都不适用就直接从原图整理布局。只有带 `--approved` 的命令才接受
+简化稿。三条路线的做法与提示词模板见
+[范围确认与简化图交接](skills/image-to-cad/references/scope.md)。
 
-The agent interprets the source, agrees on what to retain, and prepares the layout. If a
-generated simplification is used, the user approves that exact version before export; the
-`--approved` flag enforces that. Generating a simplification needs an image-generation tool
-in the agent environment. The Python dependencies only compile, export, and read back.
+The agent agrees on scope first (walls and openings, site outline and walks, which elements to
+retain), then uses whatever the environment supports: generate the simplification and ask for
+approval, hand the prompt and source to the user and verify what comes back, or build the layout
+from the source without a simplification. Only a command with `--approved` accepts one. See
+[scope and handoff](skills/image-to-cad/references/scope.md) for the question sets and the prompt
+template.
 
 ## 能力边界 / What it is not
 

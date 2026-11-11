@@ -1,4 +1,5 @@
 """Run all three exporters with generated drawings in a temporary directory."""
+import hashlib
 import json
 from pathlib import Path
 from subprocess import run
@@ -48,7 +49,33 @@ def main():
         check('building', ['--source', str(source), '--layout', str(building)], work, {'INSERT'})
         check('landscape', ['--source', str(source), '--layout', str(landscape)], work, {'SPLINE'})
         check('pen', ['--simplified', str(source), '--approved'], work, {'HATCH'})
-        print('All three exporters passed.')
+
+        # Handoff path: an externally produced simplification is accepted with
+        # --approved, and a size mismatch is recorded instead of being hidden.
+        matching = work / 'simplified-matching.png'
+        Image.new('RGB', (200, 140), 'white').save(matching)
+        mismatch = work / 'simplified-mismatch.png'
+        Image.new('RGB', (100, 70), 'white').save(mismatch)
+        for label, image, frame_match, warns in (
+            ('match', matching, True, False),
+            ('mismatch', mismatch, False, True),
+        ):
+            result = work / f'handoff-{label}'
+            finished = run(
+                [sys.executable, str(CONVERT), 'building', '--source', str(source),
+                 '--layout', str(building), '--simplified', str(image), '--approved',
+                 '--output', str(result)],
+                check=True, capture_output=True, text=True,
+            )
+            report = json.loads((result / 'report.json').read_text())
+            if report['simplified_frame_match'] is not frame_match:
+                raise RuntimeError(f'handoff-{label}: wrong simplified_frame_match')
+            if ('warning:' in finished.stderr) is not warns:
+                raise RuntimeError(f'handoff-{label}: unexpected frame warning')
+            if report['approved_image_sha256'] != hashlib.sha256(image.read_bytes()).hexdigest():
+                raise RuntimeError(f'handoff-{label}: approved hash does not match the input')
+
+        print('All three exporters and the simplification handoff passed.')
 
 
 if __name__ == '__main__':
