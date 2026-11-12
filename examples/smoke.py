@@ -20,8 +20,13 @@ def check(mode, arguments, work, expected):
     audit = drawing.audit()
     if audit.errors or audit.fixes or not expected <= {entity.dxftype() for entity in drawing.modelspace()}:
         raise RuntimeError(f'{mode} DXF failed readback')
-    if not (result / 'cad-preview.png').is_file():
-        raise RuntimeError(f'{mode} preview is missing')
+    for filename in ('cad-preview.png', 'layout.json', 'report.json', 'review.html'):
+        if not (result / filename).is_file():
+            raise RuntimeError(f'{mode} is missing {filename}')
+    if mode == 'pen':
+        trace = json.loads((result / 'layout.json').read_text())
+        if len(trace['hatches']) != len(drawing.modelspace()) or not (result / 'cad-vector.svg').is_file():
+            raise RuntimeError('pen is missing read-back hatch geometry')
 
 
 def main():

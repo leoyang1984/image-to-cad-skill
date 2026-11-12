@@ -16,9 +16,9 @@ python3.11 -m venv .venv
 .venv/bin/python examples/smoke.py
 ```
 
-`examples/smoke.py` 用合成图验证三条导出路线。
+`examples/smoke.py` 验证原有路线，`python examples/section_smoke.py` 验证剖面重构与线稿提取。
 
-已验证环境为 macOS arm64 和 Python 3.11。Windows 上虚拟环境的解释器路径为 `.venv\Scripts\python.exe`，依赖和转换的实际运行仍需在目标环境验证。入口帮助应列出 `prepare`、`building`、`landscape`、`pen`。
+已验证环境为 macOS arm64 和 Python 3.11。Windows 上虚拟环境的解释器路径为 `.venv\Scripts\python.exe`，依赖和转换的实际运行仍需在目标环境验证。入口帮助应列出 `prepare`、`building`、`landscape`、`section`、`pen`。
 
 直接依赖是 NumPy、OpenCV Headless、Shapely、ezdxf、Pillow、pypdfium2 和 PyMuPDF。按 [requirements.txt](../requirements.txt) 安装固定版本，pip 会一并解析传递依赖。透视 PNG 回读渲染使用 PyMuPDF，其发行包注明 AGPL 3.0 或 Artifex 商业许可。
 
@@ -40,7 +40,7 @@ mkdir -p .agents/skills
 ln -s ../../skills/image-to-cad .agents/skills/image-to-cad
 ```
 
-如果 Agent 通过对话读取工作区文件，直接指向 `skills/image-to-cad/SKILL.md`，并从项目根目录执行本文命令。生成式简化需要 Agent 环境提供 ImageGen，安装 Python 依赖即可运行 DXF 编译、导出和回读。没有图像生成工具时，建筑和景观可从原图整理布局，透视可使用用户已确认的钢笔稿。
+如果 Agent 通过对话读取工作区文件，直接指向 `skills/image-to-cad/SKILL.md`，并从项目根目录执行本文命令。生成式简化需要 Agent 环境提供 ImageGen，安装 Python 依赖即可运行 DXF 编译、导出和回读。没有图像生成工具时，平面和剖面可从原图整理布局，透视可使用用户已确认的钢笔稿。
 
 ## 准备原图
 
@@ -50,9 +50,13 @@ ln -s ../../skills/image-to-cad .agents/skills/image-to-cad
 .venv/bin/python skills/image-to-cad/scripts/convert.py prepare drawing.pdf --page 1 --dpi 200 --output reference.png
 ```
 
-## 没有生图工具时
+## 设计意图和输入路线
 
-建筑与景观可以先不用简化稿，直接从原图整理布局。透视路线需要一张确认稿：当前环境能生成或编辑图片时，按下面的确认关口走；不能时，把源图与提示词交给用户，由用户用任意图像工具生成后存回 `simplified.png`。交接步骤、提示词模板与验收清单见 [范围确认与简化图交接](scope.md)。
+建筑平面、景观平面与建筑剖面默认使用 `--intent reconstruct`。确认后的钢笔稿使用 `--intent trace`。可以省略参数沿用各命令默认值。根据清晰度从原图直接整理、采用经确认的简化稿，或从现成线稿提取待分类的矢量线。
+
+### 没有生图工具时
+
+建筑平面、剖面与景观可以先不用简化稿，直接从原图整理布局。透视路线需要一张确认稿：当前环境能生成或编辑图片时，按下面的确认关口走；不能时，把源图与提示词交给用户，由用户用任意图像工具生成后存回 `simplified.png`。交接步骤、提示词模板与验收清单见 [范围确认与简化图交接](scope.md)。
 
 `--simplified` 的图片会先按 `prepare` 的方式重新编码。尺寸与源图不一致时，叠合页会把它拉伸到源图框，只作视觉参考；报告里的 `simplified_frame_match` 为 `false`。
 
@@ -78,7 +82,20 @@ ln -s ../../skills/image-to-cad .agents/skills/image-to-cad
 .venv/bin/python skills/image-to-cad/scripts/convert.py landscape --source reference.png --layout layout.json --output landscape-v1
 ```
 
-建筑和景观采用经确认的简化稿时，在对应命令加 `--simplified approved.png --approved`。叠合页把简化稿放入原图画幅用于视觉核对，重绘产生的位置漂移以原图为准。
+建筑和景观采用经确认的简化稿时，在对应命令加 `--simplified approved.png --approved`。叠合页把简化稿放入原图画幅用于视觉核对。以原图验证构件、开口和连通关系，允许有依据的几何规整。
+
+## 建筑剖面
+
+使用 [剖面构件 JSON 规范](section.md) 记录墙板梁柱、宿主洞口、坡道与楼梯。程序保留显式连接，按图幅及局部尺度规整几何，回读检查开口、构件 ID 和坡道方向。
+
+```bash
+.venv/bin/python skills/image-to-cad/scripts/convert.py section \
+  --source reference.png --layout section.json --output section-v1
+.venv/bin/python skills/image-to-cad/scripts/convert.py section \
+  --source clean-lines.png --input-route linework --output lines-v1
+```
+
+线稿提取输出未分类的可编辑线条。需要建筑语义时补写构件及关系，再用 `--layout` 导出。经用户确认的简化稿可加 `--simplified approved.png --approved`，并用 `--approved-sha256` 锁定版本。
 
 ## 透视钢笔画
 
@@ -92,4 +109,6 @@ DXF 使用四档灰度的 HATCH，适合保持钢笔画的外观。需要逐条�
 
 ## 输出
 
-各路线输出 `redrawn.dxf`、`cad-preview.png` 和 `report.json`。平面另外输出结构化 `layout.json` 和单画布 HTML。透视另外输出 `cad-vector.svg`。有确认稿时报告记录其 SHA-256、像素尺寸与 `simplified_frame_match`，便于核对使用的版本。
+各路线输出 `redrawn.dxf`、`cad-preview.png`、`report.json`、`layout.json` 和 `review.html`。平面保留原有命名的对照页。透视另外输出 `cad-vector.svg`，布局记录 DXF 回读的填充边界，命令仍以确认稿为输入。可选 `pen --source original.png` 把原图加入对照页。
+
+有确认稿时输出 `cleaned.png` 并在报告记录确认稿的 SHA-256。关系、几何、可编辑性和整洁度分别记录，自动检查范围随路线不同。剖面报告包含构件统计、已声明关系及待确认内容。

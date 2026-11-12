@@ -1,3 +1,3 @@
 interface:
   display_name: "图片转 CAD"
-  short_description: "重绘建筑与景观平面，将钢笔透视线稿转为分层 DXF"
+  short_description: "重构建筑平面、剖面与景观，描摹钢笔线稿并导出分层 DXF"

@@ -1,10 +1,9 @@
 # 图片转 CAD Skill · Image-to-CAD Skill
 
-把建筑平面、景观平面和透视钢笔画转换成分层 DXF。平面路线由助手读图整理布局，程序据此绘制可编辑图形；透视路线保留已确认钢笔稿的笔触与层次。
+将建筑平面、剖面和景观图重构为可继续编辑、改造和设计的 CAD 底图。**Reconstruct** 优先保护构件、开口和空间关系，允许根据原图做合理的几何规整。**Trace** 用于钢笔画、插画和 Logo 等外观敏感的线稿，保留轮廓、笔触和视觉层次。
 
-Convert architectural plans, landscape plans, and approved perspective pen drawings into
-layered DXF. Plan routes draw editable geometry from a layout interpreted by the agent.
-The perspective route preserves the strokes and tones of a pen drawing the user approved.
+Reconstruct architectural plans, sections and landscapes into editable CAD drawings.
+Trace approved artwork to preserve contours, line weight and tonal detail.
 
 [Skill 说明](skills/image-to-cad/SKILL.md) · [中文运行说明](skills/image-to-cad/references/runtime.md) ·
 [English runtime guide](skills/image-to-cad/references/runtime.en.md) ·
@@ -13,6 +12,7 @@ The perspective route preserves the strokes and tones of a pen drawing the user 
 | 路线 / Route | 输入 / Input | 主要输出 / Main outputs |
 | --- | --- | --- |
 | 建筑平面<br>Architectural plan | 原图与墙体、开口布局 JSON<br>Source image and a full-image layout JSON | 分层 DXF、门窗图块、单画布叠合页<br>Layered DXF, door and window blocks, review page |
+| 建筑剖面<br>Architectural section | 原图与构件、宿主开口和连接 JSON<br>Source image and semantic layout | 原生线段与多段线、构件图层、关系检查<br>Native editable geometry and relationship report |
 | 景观平面<br>Landscape plan | 原图与分层路径 JSON<br>Source image and layered paths in JSON | 分层 DXF、样条与多段线、叠合页<br>Layered DXF with splines and polylines, review page |
 | 透视钢笔稿<br>Perspective pen drawing | 已确认的白底扫描稿或渲染稿<br>Approved pen drawing on a white background | 四档灰度实心 HATCH 的 DXF、SVG、PNG<br>DXF with four-tone solid HATCH, SVG, PNG |
 
@@ -20,7 +20,7 @@ The perspective route preserves the strokes and tones of a pen drawing the user 
 
 仓库自带两套可以直接改用的布局：[examples/apartment.json](examples/apartment.json)（8 段墙、14 处开口，
 含车库门与待确认开口）和 [examples/garden.json](examples/garden.json)（7 个景观图层、曲线与多段线）。
-`examples/smoke.py` 是最小合成夹具，CI 每次推送都用它验证三条导出路线。
+`examples/smoke.py` 是最小合成夹具，它验证原有建筑、景观和钢笔画路线。[剖面回归](examples/section_smoke.py)验证无填充、多层和带通行构件的剖面，以及普通线稿提取。
 
 仓库**不附带任何真实项目图纸**。要在自己的图纸上使用，把图放到本地目录，再按
 [运行说明](skills/image-to-cad/references/runtime.md)整理布局。`examples/demo.py` 用上面的合成布局
@@ -30,7 +30,7 @@ Two layouts ship with the repository and are meant to be copied:
 [examples/apartment.json](examples/apartment.json) (eight walls, fourteen openings, including a garage
 door and an unresolved opening) and [examples/garden.json](examples/garden.json) (seven landscape
 layers, curves, and polylines). `examples/smoke.py` is the minimal synthetic fixture that CI runs on
-every push.
+every push. [Section regressions](examples/section_smoke.py) also cover openings, stair treads, ramp connections and unclassified linework.
 
 The repository ships **no real project drawing**. To work on your own plan, keep the image in your
 own directory and prepare the layout as described in the
@@ -39,16 +39,16 @@ synthetic layouts into `docs/cases/` as regression output only; the images are n
 
 ## 安装 / Installation
 
-使用 Python 3.11，在仓库根目录执行。倒数第二条命令用合成图验证三条导出路线，最后一条命令重新生成 `docs/cases/` 里的回归图。
+使用 Python 3.11，在仓库根目录安装依赖并运行回归。最后一条命令重新生成 `docs/cases/` 里的合成回归图。
 
-Run these from the repository root with Python 3.11. The second-to-last command checks all
-three exporters; the last one regenerates the regression images in `docs/cases/`.
+Run these from the repository root with Python 3.11. The last command regenerates the synthetic images in `docs/cases/`.
 
 ```bash
 python3.11 -m venv .venv
 .venv/bin/python -m pip install -r skills/image-to-cad/requirements.txt
 .venv/bin/python -m pip check
 .venv/bin/python examples/smoke.py
+.venv/bin/python examples/section_smoke.py
 .venv/bin/python examples/demo.py
 ```
 
@@ -69,43 +69,25 @@ mkdir -p .agents/skills
 ln -s ../../skills/image-to-cad .agents/skills/image-to-cad
 ```
 
-## 使用约定 / Workflow notes
+## 剖面重构 / Reconstruct a section
 
-助手先与用户确认这次要表达的范围（墙体与门窗、场地外缘与步道、保留哪些构件），再按当前环境
-的能力选做法：能生图就直接生成简化稿并请用户确认；不能生图就把提示词和源图交给用户，用任意
-图像工具生成后拿回来验收；两者都不适用就直接从原图整理布局。只有带 `--approved` 的命令才接受
-简化稿。三条路线的做法与提示词模板见
-[范围确认与简化图交接](skills/image-to-cad/references/scope.md)。
+```bash
+.venv/bin/python skills/image-to-cad/scripts/convert.py section \
+  --intent reconstruct --source reference.png --layout section.json --output section-v1
 
-The agent agrees on scope first (walls and openings, site outline and walks, which elements to
-retain), then uses whatever the environment supports: generate the simplification and ask for
-approval, hand the prompt and source to the user and verify what comes back, or build the layout
-from the source without a simplification. Only a command with `--approved` accepts one. See
-[scope and handoff](skills/image-to-cad/references/scope.md) for the question sets and the prompt
-template.
+.venv/bin/python skills/image-to-cad/scripts/convert.py section \
+  --source clean-lines.png --input-route linework --output lines-v1
+```
 
-## 能力边界 / What it is not
+清晰的原图可直接整理布局。填充密集的图纸可先做简化稿，逐区核查开口、墙板柱连接和坡道方向，经用户确认后使用 `--simplified approved.png --approved`。已有干净线稿可提取普通矢量路径，再判断建筑语义。简化提示词与无生图工具时的交接方式见[工作流](skills/image-to-cad/references/scope.md)。剖面构件、规整容差和报告格式见[剖面规范](skills/image-to-cad/references/section.md)。
 
-- **不是自动识别。** 脚本不读图；布局 JSON 由助手读图后整理，程序只做确定性重绘。没有模型、
-  没有 OCR，也不会上传图纸。
-- **不做文字、尺寸与标注。** 不推断真实比例；没有校准时一律使用未校准像素单位。
-- **平面路线不输出填充。** 只有墙体边界、门窗图块与图层；HATCH 只属于透铁路线。
-- **曲线是近似。** 景观样条与多段线由控制点生成，不还原原图打印线宽或抖动。
-- **只画整幅。** `crop_xyxy` 与 `frame` 必须等于源图尺寸；要画局部，先用 `prepare` 或外部工具裁图。
-- **不猜设计。** 布局里没有的墙不会被补齐，缺口不会被连上，斜墙不会被强行拉正。
+## 输出与质量 / Deliverables
 
-- **Not an automatic recognizer.** The scripts never read the image; the agent prepares the
-  layout and the scripts redraw it deterministically. No model, no OCR, no uploads.
-- **No text, dimensions, or annotations.** Scale is never inferred; uncalibrated pixel units
-  are used unless you supply a real measurement.
-- **Plan routes emit no fills.** Only wall boundaries, door and window blocks, and layers.
-  HATCH belongs to the perspective route.
-- **Curves are approximations.** Landscape splines and polylines follow control points rather
-  than reproducing printed line weight.
-- **Whole frames only.** `crop_xyxy` and `frame` must equal the source size; crop first with
-  `prepare` or another tool to work on a region.
-- **No invented design.** Missing walls are not filled in, gaps are not bridged, and skewed
-  walls are not forced orthogonal.
+导出 `redrawn.dxf`、`cad-preview.png`、`layout.json`、`report.json` 和可切换底图及图层的 `review.html`。使用确认稿时另存 `cleaned.png`，报告保存确认稿哈希。建筑与景观继续支持原有布局和命令。钢笔画仍用分层 HATCH，并保留 `cad-vector.svg`。
+
+剖面报告分别检查已声明的关系、几何规整、可编辑性和图面整洁。判断构件类别、遮挡和整体空间连通性需要查看原图。程序自动提取的线条放入未分类层。所有坐标使用未校准像素单位。
+
+Each route exports editable DXF, a readback preview, a JSON layout and report, and an offline review page. Section reports check declared relationships, geometry, editability and cleanliness. Automatic extraction from clean raster linework leaves paths unclassified. Existing plan layouts and the Trace HATCH command remain supported.
 
 ## 许可证 / License
 
@@ -119,5 +101,5 @@ contain no third-party drawings.
 
 ## 已验证环境 / Tested environment
 
-macOS arm64 与 Python 3.11；`examples/smoke.py` 在每次推送时由 GitHub Actions 重跑。
-Tested on macOS arm64 with Python 3.11. `examples/smoke.py` runs on every push in GitHub Actions.
+macOS arm64 与 Python 3.11；GitHub Actions 每次推送都运行原有导出与剖面回归。
+Tested on macOS arm64 with Python 3.11. GitHub Actions runs both exporter and section regressions on every push.

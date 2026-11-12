@@ -12,11 +12,12 @@ python3.11 -m venv .venv
 .venv/bin/python -m pip check
 .venv/bin/python skills/image-to-cad/scripts/convert.py --help
 .venv/bin/python examples/smoke.py
+.venv/bin/python examples/section_smoke.py
 ```
 
-`examples/smoke.py` checks all three exporters with synthetic drawings.
+`examples/smoke.py` checks the original exporters. `examples/section_smoke.py` exercises section reconstruction and clean line extraction.
 
-The verified environment is macOS arm64 with Python 3.11. On Windows, the interpreter path is `.venv\Scripts\python.exe`. Verify dependencies and conversion on the target machine. The command help lists `prepare`, `building`, `landscape`, and `pen`.
+The verified environment is macOS arm64 with Python 3.11. On Windows, the interpreter path is `.venv\Scripts\python.exe`. Verify dependencies and conversion on the target machine. The command help lists `prepare`, `building`, `landscape`, `section`, and `pen`.
 
 The direct dependencies are NumPy, OpenCV Headless, Shapely, ezdxf, Pillow, pypdfium2, and PyMuPDF. Install the versions in [requirements.txt](../requirements.txt). pip resolves their transitive dependencies. PyMuPDF renders the perspective PNG from DXF readback. Its distribution lists AGPL 3.0 or an Artifex commercial license.
 
@@ -38,7 +39,7 @@ mkdir -p .agents/skills
 ln -s ../../skills/image-to-cad .agents/skills/image-to-cad
 ```
 
-For an agent that reads workspace files on request, point it to `skills/image-to-cad/SKILL.md` and have it run the commands from the repository root. Generating simplifications requires ImageGen in the agent environment. Python dependencies handle DXF compilation, export, and readback. Architectural and landscape layouts can be interpreted directly from the source. The perspective exporter can use an already approved pen drawing.
+For an agent that reads workspace files on request, point it to `skills/image-to-cad/SKILL.md` and have it run the commands from the repository root. Generating simplifications requires ImageGen in the agent environment. Python dependencies handle DXF compilation, export, and readback. Architectural plans, sections and landscape layouts can be interpreted directly from the source. The perspective exporter can use an already approved pen drawing.
 
 ## Prepare a source image
 
@@ -85,7 +86,15 @@ The layout has `frame: [0, 0, width, height]` and a `paths` array. Each path has
 .venv/bin/python skills/image-to-cad/scripts/convert.py landscape --source reference.png --layout layout.json --output landscape-v1
 ```
 
-If an architectural or landscape plan uses an approved simplification, add `--simplified approved.png --approved` to its command. The review page displays the simplification in the source frame for visual comparison. Use the original image to resolve any position differences.
+If an architectural or landscape plan uses an approved simplification, add `--simplified approved.png --approved` to its command. The review page displays the simplification in the source frame for visual comparison. Use the source to verify critical relationships and allow justified regularization.
+
+## Architectural sections
+
+Use `section --intent reconstruct --source reference.png --layout section.json --output section-v1`.
+See the [section schema](section.md) for component IDs, hosted openings, directed ramp connections,
+regularization and the readback report. With already clean line art, `section --source clean.png
+--input-route linework --output lines-v1` extracts unclassified editable lines. Use
+`--simplified approved.png --approved` for a confirmed intermediate and optionally pin its SHA-256.
 
 ## Perspective pen drawing
 
@@ -99,4 +108,4 @@ The DXF uses four shades of solid HATCH to preserve the pen drawing's appearance
 
 ## Outputs
 
-Each workflow writes `redrawn.dxf`, `cad-preview.png`, and `report.json`. Plan workflows also write `layout.json` and a single-canvas HTML review page. The perspective workflow also writes `cad-vector.svg`. If an approved simplification was supplied, the report records its SHA-256, pixel size and `simplified_frame_match` to identify the input version.
+Each workflow writes `redrawn.dxf`, `cad-preview.png`, `layout.json`, `report.json`, and `review.html`. Plan workflows retain their original review page names as well. The perspective workflow also writes `cad-vector.svg` and records the hatch rings in its layout. Use optional `pen --source original.png` to compare an original image. An approved simplification is exported as `cleaned.png` and its original SHA-256 is recorded in the report.

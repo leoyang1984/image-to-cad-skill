@@ -1,5 +1,6 @@
 """Trace approved pen strokes as graded DXF fills and render a DXF readback."""
 from collections import Counter
+import json
 import re
 from xml.etree import ElementTree as ET
 
@@ -79,12 +80,17 @@ def convert_pen(source, out):
     entities = list(saved.modelspace())
     if not entities or any(entity.dxftype() != 'HATCH' or not entity.dxf.solid_fill for entity in entities):
         raise ValueError('The image must contain pen strokes that can be exported as solid hatches')
-    for entity in entities:
+    hatches = []
+    for index, entity in enumerate(entities, 1):
         loops = entity.paths.paths
         if not loops or any(not loop.is_closed or len(loop.vertices) < 3 for loop in loops):
             raise ValueError('Invalid hatch boundary after DXF readback')
         if not Polygon(loops[0].vertices, [hole.vertices for hole in loops[1:]]).is_valid:
             raise ValueError('Invalid hatch topology after DXF readback')
+        hatches.append({
+            'id': f'stroke-{index}', 'layer': entity.dxf.layer, 'rgb': tuple(entity.rgb),
+            'rings': [[(vertex[0], height - 1 - vertex[1]) for vertex in loop.vertices] for loop in loops],
+        })
 
     renderer = svg.SVGBackend()
     settings = config.Configuration(background_policy=config.BackgroundPolicy.WHITE)
@@ -109,6 +115,12 @@ def convert_pen(source, out):
         page = render[0]
         page.get_pixmap(matrix=pymupdf.Matrix(width / page.rect.width, height / page.rect.height),
                         alpha=False).save(out / 'cad-preview.png')
+    model = {
+        'schema_version': 1, 'intent': 'trace', 'frame': [0, 0, width, height],
+        'coordinate_system': 'raster pixel centers; x right, y down', 'hatches': hatches,
+    }
+    (out / 'layout.json').write_text(json.dumps(model, ensure_ascii=False, separators=(',', ':')) + '\n',
+                                      encoding='utf-8')
     return {
         'entities': len(entities),
         'layers': dict(Counter(entity.dxf.layer for entity in entities)),

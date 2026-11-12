@@ -1,119 +1,52 @@
-# 范围确认与简化图交接 / Scope agreement and simplification handoff
+# 范围、简化稿与验收 / Scope and simplification
 
-本文件补齐一个前提：**不是每个 Agent 环境都有生图能力**。建筑与景观平面可以直接从原图整理，
-透视路线在拿不到确认稿时不能导出。先问清范围，再按当前环境的能力选执行方式。
+## 先确定意图和范围
 
-Not every agent environment can generate images. Plans can be interpreted directly from the
-source; the perspective route cannot export without an approved drawing. Agree on scope first,
-then pick the execution mode that the current environment actually supports.
+Reconstruct 用于建筑平面、建筑剖面与景观设计底图。优先保留主要构件、关键开口及空间连接。允许拉直抖动、统一接近的墙板厚度、适度移动端点和简化复杂材料或门窗线。依据原图核对开口、支承和通行关系，避开没有图面依据的设计补全。Trace 用于 Logo、插画和钢笔画。优先保留轮廓、曲线、线重、留白与笔触。
 
-## 1. 先问一次范围 / Agree on scope once
+| 输入 | 建议默认保留 | 按任务省略 |
+| --- | --- | --- |
+| 建筑平面 | 墙、门窗与通行开口，必要楼梯 | 家具、设备、文字与材质线 |
+| 建筑剖面 | 墙、板、梁、柱、门窗洞口、楼梯、坡道及相邻平台，可辨认的基础 | 地下土方和材料填充、人物、洁具、装饰、无关标注 |
+| 景观平面 | 场地外缘、主步道两侧、分区、构筑物轮廓、必要台阶 | 铺装纹理、杂散标识 |
+| 透视线稿 | 轮廓、关键开口、分格、线重、留白 | 随任务选择背景、车辆、倒影 |
 
-读图后集中问一次，每题都给出建议默认值，用户回一句「按默认」即可继续。不要逐条追问。
-Ask once, with a recommended default for every item, so the user can answer "use the defaults".
-Do not drip the questions out one at a time.
+沿用用户已经确认的范围。必要时集中询问对交付有实质影响的取舍。剖面里有的密线是踏步、玻璃分格或基础边缘，应按对象意义判断。记录 `omitted`、`regularization` 和待确认问题。保留看不清的必要开口或构件线，用待确认状态表达。
 
-**建筑平面 / Architectural plan**
+## 三条输入路线
 
-| 问题 | 选项（默认在前） |
-| --- | --- |
-| 主要表达什么 | 墙体、门窗与主要开口 / 再加楼梯与固定设备 / 再加家具 |
-| 文字与尺寸 | 全部省略 / 保留房间名 / 保留全部标注 |
-| 线宽 | 统一线宽 / 保留原图线宽差异 |
+| 路线 | 何时使用 | 做法 |
+| --- | --- | --- |
+| A 原图 | 构件与连接清楚 | 原图 → 助手布局 JSON → 编译 → 回读与对照。 |
+| B 简化图 | 填充、纹理或构造细部遮住主体 | 原图 → 整理保留范围 → 生成或交接简化稿 → 查关键关系 → 用户确认同一版本 → 布局和导出。 |
+| C 现成线稿 | 画面已干净且需要普通可编辑路径 | `section --input-route linework` 自动提取到 `S-LINEWORK`，检查留白、线宽和轮廓。需要建筑语义时补写布局再编译。保留画面笔触时走已确认输入的 `pen`。 |
 
-**景观平面 / Landscape plan**
+能实际调用生图工具时可以生成 B 稿。没有工具时，交接原图和提示词给愿意操作的用户，或对建筑和景观回到 A。透视描摹可以直接使用用户已确认的白底钢笔稿。将 PDF 先按页和 DPI 导出基准图。发 B 稿前逐区校核并单独展示该稿。收到明确确认后用 `--approved` 导出，带 `--approved-sha256` 可以校验精确文件。报告记录确认稿哈希。如果尺寸不同，叠合页面按画框缩放，只作视觉比较。
 
-| 问题 | 选项（默认在前） |
-| --- | --- |
-| 保留对象 | 场地外缘、主步道两侧、主体构筑物轮廓 / 加分区边界 / 加台阶与平台 / 加铺装纹理 |
-| 用途不明的灰面、色块 | 只画可见边界 / 整块省略 |
-| 图签、文字、散点 | 省略 / 保留 |
-
-**透视钢笔稿 / Perspective pen drawing**
-
-| 问题 | 选项（默认在前） |
-| --- | --- |
-| 保留内容 | 主体轮廓、关键开口、分格 / 保留材质线 / 保留背景山线与植物 |
-| 省略内容 | 人物、车辆、倒影 / 保留一人作尺度 |
-| 线条 | 统一细钢笔线 / 保留粗细层次 |
-
-景观的问法可以直接照这个结构：
-
-> 建议保留三个圆的外轮廓和入口、主步道两侧边线、主要场地分区；圆内主造型可以独立成层，
-> 附属构筑物只留外轮廓；右侧灰区可以画边界，具体用途看不清。建议省去碎石、铺装纹理和地面标识。
-> 可以按这套做，也可以指定要增减的对象或区域。你想保留哪些？
-
-## 2. 把范围写进布局 / Record the scope in the layout
-
-- `omitted`：用户确认省略的对象。必填，程序会把它写进报告的 `out_of_scope`。
-- `regularization`：统一线宽、规整抖动、门窗符号约定。必填。
-- `certainty: needs_confirmation`：仍不确定的开口，交付时单列。
-
-范围是一种约定，不是识别结果。用户后来改主意时，改布局数组并重新生成，不要悄悄扩大范围。
-
-## 3. 按能力选执行方式 / Pick the mode you can actually run
-
-| 情况 | 做法 |
-| --- | --- |
-| 能直接生成或编辑图片 | 生成简化稿 → 与原图逐区对照 → 单独发给用户确认 → 确认后加 `--approved` 导出 |
-| 不能生图，用户愿意跑一次外部工具 | 交出提示词与源图 → 用户用任意图像生成/编辑工具生成 → 存回 `simplified.png` → 助手逐区验收 → 用户确认后加 `--approved` |
-| 不能生图，用户不想折腾 | 直接从原图整理布局，不用简化稿。建筑与景观都适用 |
-| 透视路线且没有可用的确认稿 | 只能走前两种；没有确认稿就不导出 DXF |
-
-**不要假装能力。** 判断依据是当前环境能否真的调用图像生成或编辑工具，不是猜测、也不是问用户
-「你有没有生图工具」。拿不到工具就走交接，不要用文字描述冒充生成结果。
-
-Never claim a capability you cannot invoke. Decide from the tools actually available in the
-current environment, not from guesswork and not by asking the user whether they have an image
-model. If no tool is available, hand off; never describe an image you did not produce.
-
-## 4. 交接协议 / Handoff protocol
-
-1. **导出基准图。** PDF 先定页与 DPI，建筑与景观的布局坐标必须对着这张图写。
-
-   ```bash
-   .venv/bin/python skills/image-to-cad/scripts/convert.py prepare drawing.pdf --page 1 --dpi 200 --output reference.png
-   ```
-
-2. **写提示词文件。** 与源图放在同一目录，命名为 `simplify-prompt.md`，包含下方模板与本轮的范围要求。
-3. **用户生成。** 把源图和提示词一起交给任意图像生成/编辑工具，结果存成 `simplified.png`。
-4. **验收。** 逐区对照原图，列出遗漏、新增、灰底、水印。
-5. **确认后导出。** 用户明确认可同一版本后，才执行带 `--approved` 的命令。
-6. **留痕。** 报告记录简化稿的 SHA-256；尺寸与源图不一致时同时记录 `simplified_frame_match: false`。
-
-```bash
-.venv/bin/python skills/image-to-cad/scripts/convert.py building \
-  --source reference.png --layout layout.json \
-  --simplified simplified.png --approved --output building-v1
-```
-
-### 提示词模板 / Prompt template
+## 简化图提示词
 
 ```text
-Edit the attached drawing into a clean line version. Keep the canvas, framing,
-orientation and proportions unchanged: do not crop, rotate or rescale.
-Output pure black lines on a pure white background, with no grey fills, no
-shading, no textures, no text, no dimensions and no watermark.
-Keep <范围: 墙体、门窗与主要开口 / 场地外缘、主步道两侧、主体构筑物轮廓 ...>.
-Remove <范围: 家具、文字、铺装纹理、碎石、地面标识 ...>.
-Do not add, delete or move any element. Where the drawing is unreadable, leave
-the area empty rather than inventing geometry.
+Redraw this architectural section as a clean line drawing for an editable CAD
+working base. Keep the crop, orientation and overall proportions. Keep the main
+walls, slabs, beams, columns, openings, stairs, ramp, adjoining landings and
+readable foundation outlines, as specified for this drawing.
+
+Straighten slight wobble, unify similar thicknesses and simplify incidental
+details where the source supports it. Preserve component counts, key openings,
+wall/slab/column connections, and the stair and ramp direction and landing
+relationships. Do not invent components, dimensions or uncertain connections.
+A thick stroke may be one boundary rather than two separate components.
+
+Use clear black lines on a white background. Omit earth and material hatching,
+people, fixtures, decorative details and unrelated text. Preserve dense lines
+when they express a needed feature such as treads or glazing divisions.
 ```
 
-### 验收清单 / Acceptance checklist
+建筑平面与景观按范围替换构件列表。Trace 改用外观优先的提示，要求保留原有轮廓、自由曲线、笔触和视觉层次。对明确不需要的背景纹理另列省略项。
 
-- **尺寸与比例**：与源图一致最稳妥。不一致时叠合页会把简化稿拉伸到源图框，只能当视觉参考，
-  不能用来判断位置；报告里的 `simplified_frame_match` 会是 `false`。
-- **构件数量**：门窗、开口逐区核对。生成稿最常见的错误是漏门、多画门弧、把设备边界画成隔墙。
-- **背景**：纯白。灰底或阴影会污染钢笔路线的四档阈值。
-- **水印与文字**：出现即重做，不要试图在后续步骤里修补。
+## 视觉验收
 
-## 5. 什么时候不用简化图 / When to skip it
-
-- 图面本身清晰、线条不多：直接读原图更快，也不会引入生成误差。
-- 用户只要求局部或单一构件。
-- 用户不接受把图纸交给第三方服务：这既是保密决定，也是授权决定，必须问过再操作。
-
-简化稿只用于帮助读图。几何一律回原图核对，简化稿里的位置漂移、增删都不作为依据。
-A simplification is a reading aid. Check geometry against the source; never inherit its drift,
-additions or omissions into the drawing.
+- 先检查构件数量和空间关系。逐区核对墙板柱、宿主洞口、楼梯与坡道起终点。遮挡端点进入待确认清单。
+- 比较规整前后。轻微位置调整可以接受，重要开口消失、通路改变或凭空出现结构需要重做。
+- 检查实际落盘 DXF 的图层、可选图元、闭合、重复和碎线。图面整洁与开口通行优先于像素重合率。
+- 标明助手解读、人工准备、模型辅助与程序线条提取的边界。输出未校准像素单位，未知尺寸由使用者另行校准。

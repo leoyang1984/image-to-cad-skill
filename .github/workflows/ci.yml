@@ -34,8 +34,11 @@ jobs:
       - name: CLI help
         run: python skills/image-to-cad/scripts/convert.py --help
 
-      - name: All three exporters
+      - name: Existing exporters and simplification handoff
         run: python examples/smoke.py
+
+      - name: Section reconstruction and linework extraction
+        run: python examples/section_smoke.py
 
       - name: Regenerate the synthetic demo outputs
         run: |
