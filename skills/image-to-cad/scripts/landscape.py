@@ -1,6 +1,8 @@
 """Compile landscape paths into layered polylines and splines."""
 import ezdxf
 
+from path_geometry import add_native_path, parse_path
+
 
 LAYERS = {
     "L-SITE-EDGE": ("场地外缘", (68, 72, 78)),
@@ -13,58 +15,8 @@ LAYERS = {
 }
 
 def add_outline(modelspace, outline, height):
-    tokens = iter(outline["d"].split())
-
-    def point():
-        return float(next(tokens)), height - 1 - float(next(tokens))
-
-    if next(tokens) != "M":
-        raise ValueError("An outline must begin with M")
-    start = current = point()
-    segments = []
-    closed = False
-    for command in tokens:
-        if command == "L":
-            end = point()
-            segments.append((current, end))
-        elif command == "C":
-            handle1, handle2, end = point(), point(), point()
-            segments.append((current, handle1, handle2, end))
-        elif command == "Z":
-            closed = True
-            if current != start:
-                segments.append((current, start))
-            if next(tokens, None) is not None:
-                raise ValueError("Z must end the outline")
-            break
-        else:
-            raise ValueError(f"Unsupported outline command {command}")
-        current = end
-    if not segments:
-        raise ValueError("An outline requires at least one segment")
-
-    attrs = {"layer": outline["layer"]}
-    if all(len(segment) == 2 for segment in segments):
-        vertices = [start, *(segment[-1] for segment in segments)]
-        if closed:
-            vertices.pop()
-        entity = modelspace.add_lwpolyline(vertices, close=closed, dxfattribs=attrs)
-    else:
-        # A cubic spline with triple internal knots can represent consecutive
-        # Bezier curves, including the sharp changes at entrance jambs.
-        controls = [start]
-        for segment in segments:
-            if len(segment) == 2:
-                a, b = segment
-                h1 = tuple((2*x+y)/3 for x, y in zip(a, b))
-                h2 = tuple((x+2*y)/3 for x, y in zip(a, b))
-                controls.extend((h1, h2, b))
-            else:
-                controls.extend(segment[1:])
-        count = len(segments)
-        knots = [0]*4 + [k for k in range(1, count) for _ in range(3)] + [count]*4
-        entity = modelspace.add_open_spline(controls, degree=3, knots=knots, dxfattribs=attrs)
-        entity.closed = closed
+    segments, closed = parse_path(outline["d"], height)
+    entity = add_native_path(modelspace, segments, closed, {"layer": outline["layer"]})
     entity.set_xdata("LANDSCAPE", [(1000, outline["id"])])
 
 def write_landscape_dxf(model, dxf):

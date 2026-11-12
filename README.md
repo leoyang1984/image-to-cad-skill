@@ -14,7 +14,7 @@ Trace approved artwork to preserve contours, line weight and tonal detail.
 | 建筑平面<br>Architectural plan | 原图与墙体、开口布局 JSON<br>Source image and a full-image layout JSON | 分层 DXF、门窗图块、单画布叠合页<br>Layered DXF, door and window blocks, review page |
 | 建筑剖面<br>Architectural section | 原图与构件、宿主开口和连接 JSON<br>Source image and semantic layout | 原生线段与多段线、构件图层、关系检查<br>Native editable geometry and relationship report |
 | 景观平面<br>Landscape plan | 原图与分层路径 JSON<br>Source image and layered paths in JSON | 分层 DXF、样条与多段线、叠合页<br>Layered DXF with splines and polylines, review page |
-| 透视钢笔稿<br>Perspective pen drawing | 已确认的白底扫描稿或渲染稿<br>Approved pen drawing on a white background | 四档灰度实心 HATCH 的 DXF、SVG、PNG<br>DXF with four-tone solid HATCH, SVG, PNG |
+| 透视钢笔稿<br>Perspective pen drawing | 原图与路径布局，或已确认的白底稿<br>Source and path layout, or an approved white-background drawing | 分层可编辑线条或四档 HATCH，附 SVG 与 PNG<br>Layered editable strokes or four-tone HATCH, with SVG and PNG |
 
 ## 示例 / Examples
 
@@ -49,6 +49,7 @@ python3.11 -m venv .venv
 .venv/bin/python -m pip check
 .venv/bin/python examples/smoke.py
 .venv/bin/python examples/section_smoke.py
+.venv/bin/python examples/pen_lines_smoke.py
 .venv/bin/python examples/demo.py
 ```
 
@@ -83,11 +84,11 @@ ln -s ../../skills/image-to-cad .agents/skills/image-to-cad
 
 ## 输出与质量 / Deliverables
 
-导出 `redrawn.dxf`、`cad-preview.png`、`layout.json`、`report.json` 和可切换底图及图层的 `review.html`。使用确认稿时另存 `cleaned.png`，报告保存确认稿哈希。建筑与景观继续支持原有布局和命令。钢笔画仍用分层 HATCH，并保留 `cad-vector.svg`。
+导出 `redrawn.dxf`、`cad-preview.png`、`layout.json`、`report.json` 和可切换底图及图层的 `review.html`。使用确认稿时另存 `cleaned.png`，报告保存确认稿哈希。建筑与景观继续支持原有布局和命令。透视钢笔画默认从原图整理路径并生成原生可编辑线条。需要保留灰度笔触时可选分层 HATCH。两种都输出 `cad-vector.svg`。可编辑线条的命令与路径格式见[透视线稿规范](skills/image-to-cad/references/pen-lines.md)。
 
 剖面报告分别检查已声明的关系、几何规整、可编辑性和图面整洁。判断构件类别、遮挡和整体空间连通性需要查看原图。程序自动提取的线条放入未分类层。所有坐标使用未校准像素单位。
 
-Each route exports editable DXF, a readback preview, a JSON layout and report, and an offline review page. Section reports check declared relationships, geometry, editability and cleanliness. Automatic extraction from clean raster linework leaves paths unclassified. Existing plan layouts and the Trace HATCH command remain supported.
+Each route exports editable DXF, a readback preview, a JSON layout and report, and an offline review page. Section reports check declared relationships, geometry, editability and cleanliness. Automatic extraction from clean raster linework leaves paths unclassified. Trace defaults to native editable strokes for architectural perspectives and supports tonal HATCH on request. Existing plan layouts remain supported.
 
 ## 许可证 / License
 

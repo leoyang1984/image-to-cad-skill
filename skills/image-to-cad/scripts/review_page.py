@@ -14,7 +14,8 @@ def data_uri(path, media_type):
     return f"data:{media_type};base64," + base64.b64encode(path.read_bytes()).decode()
 
 def write_overlay_page(out, frame, *, source_path, simplified_path, dxf, labels, title,
-                       views, filename, download_name=None, focus=None):
+                       views, filename, download_name=None, focus=None,
+                       stroke_widths=None, vector_preview=False, source_label='原图'):
     left, top, right, bottom = frame
     width, height = right-left, bottom-top
     doc, paths = read_native(dxf, (left, top), bottom)
@@ -32,24 +33,37 @@ def write_overlay_page(out, frame, *, source_path, simplified_path, dxf, labels,
     # Keep large input sheets inexpensive. SVG keeps the full-resolution vectors.
     zoom = 2 if preview_size[0] * preview_size[1] <= 2_500_000 else 1
     preview = render([], preview_size, zoom=zoom)
-    for layer, objects in groups.items():
+    layer_order = stroke_widths if stroke_widths is not None else groups
+    for layer in layer_order:
+        if layer not in groups:
+            continue
+        objects = groups[layer]
+        stroke_width = stroke_widths[layer] if stroke_widths is not None else None
         rgb = tuple(doc.layers.get(layer).rgb or (34, 34, 34))
         color = '#{:02x}{:02x}{:02x}'.format(*rgb)
         layer_name = html.escape(layer, quote=True)
-        svg_parts.append(f'<g data-layer="{layer_name}">{paths_svg(objects, color)}</g>')
+        svg_parts.append(f'<g data-layer="{layer_name}">{paths_svg(objects, color, stroke_width)}</g>')
         legend.append(f'<label style="color:{color}"><input type="checkbox" data-toggle="{layer_name}" checked> {labels[layer]}</label>')
         # Use the rendered DXF paths as an antialiased coverage mask.
         local = [obj | {'coordinates': [(x - xmin, y - ymin) for x, y in obj['coordinates']]}
                  for obj in objects]
-        ink = render(local, preview_size, zoom=zoom, stroke=zoom)[:, :, 0]
+        stroke = max(1, round(zoom * stroke_width)) if stroke_width is not None else zoom
+        ink = render(local, preview_size, zoom=zoom, stroke=stroke)[:, :, 0]
         mask = ink < 255
         coverage = ((255 - ink[mask]) / np.float32(235))[:, None]
         preview[mask] = preview[mask] * (1 - coverage) + coverage * np.asarray(rgb[::-1])
     if not cv2.imwrite(str(out/'cad-preview.png'), preview):
         raise OSError('Could not write DXF readback preview')
+    if vector_preview:
+        vector_box = (f'{focus[0]} {focus[1]} {focus[2] - focus[0]} {focus[3] - focus[1]}'
+                      if focus else f'-.5 -.5 {width} {height}')
+        (out / 'cad-vector.svg').write_text(
+            f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{vector_box}">{"".join(svg_parts)}</svg>\n',
+            encoding='utf-8',
+        )
     write_review_page(out, frame, source_path=source_path, simplified_path=simplified_path, dxf=dxf,
                       title=title, views=views, filename=filename, download_name=download_name,
-                      focus=focus, svg_parts=svg_parts, legend=legend)
+                      focus=focus, svg_parts=svg_parts, legend=legend, source_label=source_label)
     return doc
 
 

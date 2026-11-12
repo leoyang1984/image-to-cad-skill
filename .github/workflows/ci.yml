@@ -40,6 +40,9 @@ jobs:
       - name: Section reconstruction and linework extraction
         run: python examples/section_smoke.py
 
+      - name: Editable perspective strokes
+        run: python examples/pen_lines_smoke.py
+
       - name: Regenerate the synthetic demo outputs
         run: |
           python examples/demo.py

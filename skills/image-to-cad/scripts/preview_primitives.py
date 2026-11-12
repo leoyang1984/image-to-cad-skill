@@ -3,14 +3,15 @@ import cv2
 import numpy as np
 
 
-def paths_svg(objects,color='#222'):
+def paths_svg(objects,color='#222',stroke_width=None):
     items=[]
+    style = f' style="stroke-width:{stroke_width:g}"' if stroke_width is not None else ''
     for obj in objects:
         pts=obj['coordinates']
         if len(pts)==1:
             items.append(f'<circle cx="{pts[0][0]}" cy="{pts[0][1]}" r=".35" fill="{color}"/>');continue
         d='M'+' L'.join(f'{x:.8f},{y:.8f}' for x,y in pts)+(' Z' if obj['closed'] else '')
-        items.append(f'<path d="{d}" fill="none" stroke="{color}" stroke-width=".65" stroke-linejoin="round"/>')
+        items.append(f'<path d="{d}" fill="none" stroke="{color}" stroke-width=".65" stroke-linejoin="round" stroke-linecap="round"{style}/>')
     return ''.join(items)
 
 def render(objects,size,zoom=3,stroke=1):

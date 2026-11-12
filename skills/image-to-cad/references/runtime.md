@@ -56,7 +56,7 @@ ln -s ../../skills/image-to-cad .agents/skills/image-to-cad
 
 ### 没有生图工具时
 
-建筑平面、剖面与景观可以先不用简化稿，直接从原图整理布局。透视路线需要一张确认稿：当前环境能生成或编辑图片时，按下面的确认关口走；不能时，把源图与提示词交给用户，由用户用任意图像工具生成后存回 `simplified.png`。交接步骤、提示词模板与验收清单见 [范围确认与简化图交接](scope.md)。
+建筑平面、剖面与景观可以先不用简化稿，直接从原图整理布局。透视填充路线需要一张确认稿：当前环境能生成或编辑图片时，按下面的确认关口走；不能时，把源图与提示词交给用户，由用户用任意图像工具生成后存回 `simplified.png`。交接步骤、提示词模板与验收清单见 [范围确认与简化图交接](scope.md)。
 
 `--simplified` 的图片会先按 `prepare` 的方式重新编码。尺寸与源图不一致时，叠合页会把它拉伸到源图框，只作视觉参考；报告里的 `simplified_frame_match` 为 `false`。
 
@@ -99,16 +99,25 @@ ln -s ../../skills/image-to-cad .agents/skills/image-to-cad
 
 ## 透视钢笔画
 
+建筑透视默认按[透视线稿布局规范](pen-lines.md)直接读原图，导出 LINE、LWPOLYLINE 和 SPLINE。重点保留建筑主轮廓、结构、分格和遮挡，按用途省略草木和材质纹理。
+
+```bash
+.venv/bin/python skills/image-to-cad/scripts/convert.py pen \
+  --source perspective.jpg --layout strokes.json --output pen-lines-v1
+```
+
+需要保留灰度笔触时可显式选 HATCH。已有只传 `--simplified` 和 `--approved` 的命令仍生成填充。
+
 提示词按对象分别约束。已有透视线稿保留建筑分格、主体轮廓和关键开口，压低材质与背景纹理。效果图保留取景、透视关系、门洞进深和远处有实体体量的构筑物，再处理倒影、材质、人物和植物的取舍。用连续线和线重表达层次。确认稿优先使用白底不透明 PNG。
 
 ```bash
-.venv/bin/python skills/image-to-cad/scripts/convert.py pen --simplified approved.png --approved --output pen-v1
+.venv/bin/python skills/image-to-cad/scripts/convert.py pen --representation hatch --simplified approved.png --approved --output pen-v1
 ```
 
 DXF 使用四档灰度的 HATCH，适合保持钢笔画的外观。需要逐条编辑建筑构件时，应另按构件重绘。检查圆饰、窗格和其他内部留白，确认填充边界回读有效。网页需要放大对照时，用实际 DXF 派生的 SVG 路径显示 CAD。
 
 ## 输出
 
-各路线输出 `redrawn.dxf`、`cad-preview.png`、`report.json`、`layout.json` 和 `review.html`。平面保留原有命名的对照页。透视另外输出 `cad-vector.svg`，布局记录 DXF 回读的填充边界，命令仍以确认稿为输入。可选 `pen --source original.png` 把原图加入对照页。
+各路线输出 `redrawn.dxf`、`cad-preview.png`、`report.json`、`layout.json` 和 `review.html`。平面保留原有命名的对照页。透视另外输出 `cad-vector.svg`。线条模式的布局保留可重新编译的路径。填充模式的布局记录 DXF 回读的填充边界，可加 `--source original.png` 把原图加入对照页。
 
 有确认稿时输出 `cleaned.png` 并在报告记录确认稿的 SHA-256。关系、几何、可编辑性和整洁度分别记录，自动检查范围随路线不同。剖面报告包含构件统计、已声明关系及待确认内容。

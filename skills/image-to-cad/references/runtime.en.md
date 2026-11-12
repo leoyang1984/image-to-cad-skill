@@ -51,7 +51,7 @@ Use the pixel centers of the normalized source or PDF page. X increases to the r
 
 ## Without an image-generation tool
 
-Plans can be built from the source without a simplification. The perspective route needs an
+Plans can be built from the source without a simplification. The perspective HATCH route needs an
 approved drawing: generate and compare it yourself when the environment can, or hand the source
 and a prompt to the user, who generates the image with any image tool and saves it as
 `simplified.png`. The handoff steps, prompt template and acceptance checklist are in
@@ -98,14 +98,18 @@ regularization and the readback report. With already clean line art, `section --
 
 ## Perspective pen drawing
 
+For architectural perspectives, use `pen --source perspective.jpg --layout strokes.json
+--output pen-lines-v1`. The [stroke layout](pen-lines.md) compiles to native LINE, LWPOLYLINE
+and SPLINE with layer lineweights. Use the explicit HATCH option for tonal ink. Older commands that supply an approved image without a path layout still select HATCH.
+
 Describe what to retain for each kind of object. For existing perspective line art, preserve panel divisions, main silhouettes, and key openings while reducing texture and background detail. For renderings, preserve the framing, perspective, depth of openings, and distant structures, then decide how to represent reflections, materials, people, and plants. Use continuous strokes and varied line weights. Prefer an opaque PNG with a white background for the approved drawing.
 
 ```bash
-.venv/bin/python skills/image-to-cad/scripts/convert.py pen --simplified approved.png --approved --output pen-v1
+.venv/bin/python skills/image-to-cad/scripts/convert.py pen --representation hatch --simplified approved.png --approved --output pen-v1
 ```
 
 The DXF uses four shades of solid HATCH to preserve the pen drawing's appearance. If users need to edit individual architectural components, redraw them as components. Check that circular ornaments, glazing gaps, and other white areas remain open after DXF readback. For a zoomable comparison, display SVG paths derived from the saved DXF.
 
 ## Outputs
 
-Each workflow writes `redrawn.dxf`, `cad-preview.png`, `layout.json`, `report.json`, and `review.html`. Plan workflows retain their original review page names as well. The perspective workflow also writes `cad-vector.svg` and records the hatch rings in its layout. Use optional `pen --source original.png` to compare an original image. An approved simplification is exported as `cleaned.png` and its original SHA-256 is recorded in the report.
+Each workflow writes `redrawn.dxf`, `cad-preview.png`, `layout.json`, `report.json`, and `review.html`. Plan workflows retain their original review page names as well. The perspective workflow also writes `cad-vector.svg` and records replayable paths in line mode or read-back hatch rings in hatch mode. Use optional `pen --source original.png` to compare an original image. An approved simplification is exported as `cleaned.png` and its original SHA-256 is recorded in the report.

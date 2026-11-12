@@ -131,6 +131,90 @@ def export_drawing(args, out):
         return report
 
 
+def export_pen_hatch(args, out, approved_hash):
+    from pen_dxf import convert_pen
+    from review_page import write_trace_review
+
+    cleaned = out / 'cleaned.png'
+    report = convert_pen(args.simplified, out)
+    prepare_image(args.simplified, cleaned)
+    model_file = out / 'layout.json'
+    model = json.loads(model_file.read_text(encoding='utf-8'))
+    model['approved_image'] = {'name': args.simplified_name, 'sha256': approved_hash}
+    original = cleaned
+    if args.source:
+        original = out.parent / 'pen-reference.png'
+        metadata = prepare_image(args.source, original)
+        report['source_frame_match'] = report['frame_px'] == [metadata['width'], metadata['height']]
+        report['source_sha256'] = metadata['source_sha256']
+    write_trace_review(out, model['frame'], source_path=original,
+                       simplified_path=cleaned if args.source else None,
+                       dxf=out / 'redrawn.dxf', hatches=model['hatches'])
+    model_file.write_text(json.dumps(model, ensure_ascii=False, separators=(',', ':')) + '\n',
+                          encoding='utf-8')
+    report.update(
+        representation='hatch', review_page='review.html', relationship={'status': 'not_assessed'},
+        geometry={'status': 'pass', 'valid_hatch_boundaries': report['entities']},
+        editability={'status': 'pass', 'entity_types': ['HATCH'], 'geometry_is_layered': True},
+        cleanliness={'status': 'needs_review', 'visual_review_required': True},
+    )
+    return report
+
+
+def export_pen_lines(args, out, approved_hash):
+    from pen_lines import LAYERS, audit_lines, compile_lines
+    from review_page import write_overlay_page
+
+    model = json.loads(args.layout.read_text(encoding='utf-8'))
+    if not isinstance(model, dict) or not isinstance(model.get('source_image', {}), dict):
+        raise ValueError('Pen layout and source_image must be objects')
+    cleaned, simplified_metadata = None, None
+    if args.simplified:
+        cleaned = out / 'cleaned.png'
+        simplified_metadata = prepare_image(args.simplified, cleaned)
+        model['approved_image'] = {'name': args.simplified_name, 'sha256': approved_hash}
+    if args.source:
+        original = out.parent / 'pen-reference.png'
+        metadata = prepare_image(args.source, original)
+        reference_name = args.source.name
+    else:
+        original, metadata = cleaned, simplified_metadata
+        reference_name = args.simplified_name
+    width, height = metadata['width'], metadata['height']
+    frame = [0, 0, width, height]
+    reference_hash = metadata['source_sha256']
+    prior_hash = model.get('source_image', {}).get('sha256')
+    if prior_hash and prior_hash != reference_hash:
+        raise ValueError('The pen layout source hash differs from the supplied reference')
+    model.update(intent='trace', representation='lines', source_image={
+        'name': reference_name, 'sha256': reference_hash,
+        'coordinate_system': metadata['coordinate_system'],
+    })
+    dxf = out / 'redrawn.dxf'
+    expected = compile_lines(model, frame, dxf)
+    doc = write_overlay_page(
+        out, frame, source_path=original, simplified_path=cleaned if args.source else None,
+        dxf=dxf, labels={layer: style[0] for layer, style in LAYERS.items()},
+        title='透视线稿与 DXF 对照', views={}, filename='review.html', focus=model.get('focus'),
+        stroke_widths={layer: style[3] for layer, style in LAYERS.items()}, vector_preview=True,
+        source_label='原图' if args.source else '确认稿',
+    )
+    report = audit_lines(doc, expected)
+    report.update(frame_px=[width, height], source_sha256=reference_hash,
+                  interpretation=model.get('interpretation', 'unspecified'),
+                  out_of_scope=model.get('omitted', []),
+                  unresolved_questions=model.get('unresolved_questions', []))
+    if simplified_metadata:
+        size = [simplified_metadata['width'], simplified_metadata['height']]
+        report.update(simplified_size_px=size, simplified_frame_match=size == [width, height])
+        if size != [width, height]:
+            print('warning: the review page stretches the simplified image to the source frame',
+                  file=sys.stderr)
+    (out / 'layout.json').write_text(json.dumps(model, ensure_ascii=False, indent=2) + '\n',
+                                    encoding='utf-8')
+    return report
+
+
 def drawing_arguments(parser, args):
     if args.mode == 'prepare':
         return
@@ -147,6 +231,14 @@ def drawing_arguments(parser, args):
     args.input_route = args.input_route or ('simplified' if args.simplified else 'direct')
     if (args.input_route == 'simplified') != bool(args.simplified):
         parser.error('Use --simplified together with the simplified input route')
+    if args.mode == 'pen':
+        if args.representation is None:
+            args.representation = 'hatch' if args.simplified and not args.layout else 'lines'
+        if args.representation == 'lines':
+            if not args.layout or not (args.source or args.simplified):
+                parser.error('Pen lines require --layout and --source or --simplified')
+        elif not args.simplified or args.layout:
+            parser.error('Pen hatch requires --simplified and does not accept --layout')
     if args.mode == 'section' and args.input_route != 'linework' and not args.layout:
         parser.error('Provide --layout, or select --input-route linework for automatic extraction')
 
@@ -162,14 +254,16 @@ def main():
     for mode in ('building', 'landscape', 'section', 'pen'):
         command = commands.add_parser(mode)
         command.add_argument('--source', type=Path, required=mode != 'pen')
-        if mode != 'pen':
-            command.add_argument('--layout', type=Path, required=mode != 'section')
+        command.add_argument('--layout', type=Path, required=mode in ('building', 'landscape'))
+        if mode == 'pen':
+            command.add_argument('--representation', choices=('lines', 'hatch'),
+                                 help='Editable lines with a layout, or legacy HATCH with a simplified image alone')
         if mode == 'section':
             command.add_argument('--input-route', choices=('direct', 'simplified', 'linework'))
         else:
             command.set_defaults(input_route=None)
         command.add_argument('--intent', choices=('reconstruct', 'trace'))
-        command.add_argument('--simplified', type=Path, required=mode == 'pen')
+        command.add_argument('--simplified', type=Path)
         command.add_argument('--approved', action='store_true',
                              help='The user explicitly approved this exact simplified image')
         command.add_argument('--approved-sha256',
@@ -201,32 +295,8 @@ def main():
                 parser.error('The simplification does not match --approved-sha256')
             args.simplified = snapshot
         if args.mode == 'pen':
-            from pen_dxf import convert_pen
-            from review_page import write_trace_review
-
-            cleaned = out / 'cleaned.png'
-            report = convert_pen(args.simplified, out)
-            prepare_image(args.simplified, cleaned)
-            model_file = out / 'layout.json'
-            model = json.loads(model_file.read_text(encoding='utf-8'))
-            model['approved_image'] = {'name': args.simplified_name, 'sha256': approved_hash}
-            original = cleaned
-            if args.source:
-                original = Path(scratch) / 'source.png'
-                metadata = prepare_image(args.source, original)
-                report['source_frame_match'] = report['frame_px'] == [metadata['width'], metadata['height']]
-                report['source_sha256'] = metadata['source_sha256']
-            write_trace_review(out, model['frame'], source_path=original,
-                               simplified_path=cleaned if args.source else None,
-                               dxf=out / 'redrawn.dxf', hatches=model['hatches'])
-            model_file.write_text(json.dumps(model, ensure_ascii=False, separators=(',', ':')) + '\n',
-                                  encoding='utf-8')
-            report.update(
-                review_page='review.html', relationship={'status': 'not_assessed'},
-                geometry={'status': 'pass', 'valid_hatch_boundaries': report['entities']},
-                editability={'status': 'pass', 'entity_types': ['HATCH'], 'geometry_is_layered': True},
-                cleanliness={'status': 'needs_review', 'visual_review_required': True},
-            )
+            export = export_pen_lines if args.representation == 'lines' else export_pen_hatch
+            report = export(args, out, approved_hash)
         else:
             report = export_drawing(args, out)
         if approved_hash:
